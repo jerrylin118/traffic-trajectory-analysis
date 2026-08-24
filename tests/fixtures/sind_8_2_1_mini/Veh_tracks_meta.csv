@@ -1,0 +1,3 @@
+trackId,initialFrame,finalFrame,Frame_nums,width,length,class,CrossType,Signal_Violation_Behavior
+1,0,4,5,1.8,4.5,car,StraightCross,No violation of traffic lights
+2,0,4,5,2.5,10.0,bus,LeftTurn,red-light running

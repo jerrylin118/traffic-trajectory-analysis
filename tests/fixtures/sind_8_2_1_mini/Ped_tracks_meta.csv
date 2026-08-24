@@ -1,0 +1,4 @@
+trackId,initialFrame,finalFrame,Frame_nums,class
+P1,0,2,3,pedestrian
+P2,0,10,11,pedestrian
+P3,0,30,31,pedestrian

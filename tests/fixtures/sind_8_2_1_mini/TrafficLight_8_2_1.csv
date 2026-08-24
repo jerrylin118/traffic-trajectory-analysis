@@ -1,0 +1,5 @@
+RawFrameID,timestamp(ms),Traffic light 1,Traffic light 2,Traffic light 3,Traffic light 4,Traffic light 5,Traffic light 6,Traffic light 7,Traffic light 8
+0,0,1,0,0,1,1,0,0,1
+100,3336.7,3,0,0,3,3,0,0,3
+200,6673.4,0,0,0,0,0,0,0,0
+300,10010.1,0,1,1,0,0,1,1,0
