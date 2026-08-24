@@ -22,11 +22,20 @@ SIND_REPO = "SinD"
 SIND_REF = "main"
 BASE_URL = f"https://media.githubusercontent.com/media/{SIND_OWNER}/{SIND_REPO}/{SIND_REF}/Data"
 
-# Present in every record; downloading these is required for load_sind_record to work.
+# The actual trajectory data every record has; required for load_sind_record
+# to produce anything.
 REQUIRED_FILES = [
     "Ped_smoothed_tracks.csv",
-    "Ped_tracks_meta.csv",
     "Veh_smoothed_tracks.csv",
+]
+
+# Per-track metadata that enriches the canonical schema (ped_class,
+# cross_type, signal_violation) when present, but is not present for every
+# record (e.g. some non-Tianjin records ship only the two files above) —
+# the loader already falls back to nulls for these, so a missing file here
+# must not fail the download.
+OPTIONAL_FILES = [
+    "Ped_tracks_meta.csv",
     "Veh_tracks_meta.csv",
     "recording_metas.csv",
 ]
@@ -93,18 +102,20 @@ def download_sind_record(
     """Download one SinD record's CSVs into `dest_dir/record_path/`.
 
     `record_path` is the path under SinD's `Data/` folder, e.g.
-    "Tianjin/8_2_1". Downloads the 5 required CSVs plus the
-    record-dependent `TrafficLight_<folder>.csv`, which is treated as
-    optional: a 404 for it does not raise. A 404 (or other failure) for any
-    required file is collected and raised as a single `DownloadError` after
-    all files have been attempted, so the caller sees the complete picture
-    rather than stopping at the first failure.
+    "Tianjin/8_2_1". Downloads the 2 required trajectory CSVs plus the
+    per-track metadata files and the record-dependent
+    `TrafficLight_<folder>.csv`, all of which are treated as optional: not
+    every SinD record ships them (their filenames and presence vary by
+    record), and the loader already tolerates their absence. A 404 (or
+    other failure) for a required file is collected and raised as a single
+    `DownloadError` after all files have been attempted, so the caller sees
+    the complete picture rather than stopping at the first failure.
     """
     dest_dir = Path(dest_dir) / record_path
     result = DownloadResult(record_path=record_path, dest_dir=dest_dir)
 
-    all_files = list(REQUIRED_FILES) + [_traffic_light_filename(record_path)]
-    optional_files = {_traffic_light_filename(record_path)}
+    optional_files = list(OPTIONAL_FILES) + [_traffic_light_filename(record_path)]
+    all_files = list(REQUIRED_FILES) + optional_files
 
     for filename in all_files:
         url = f"{BASE_URL}/{record_path}/{filename}"
@@ -125,13 +136,13 @@ def download_sind_record(
             f"Statuses: { {k: v.value for k, v in result.statuses.items()} }"
         )
 
-    tl_filename = _traffic_light_filename(record_path)
-    if result.statuses.get(tl_filename) == FileFetchStatus.NOT_FOUND:
-        print(
-            f"Note: {tl_filename} not found for record '{record_path}' "
-            f"(this file is optional and not present for every record).",
-            file=sys.stderr,
-        )
+    for filename in optional_files:
+        if result.statuses.get(filename) == FileFetchStatus.NOT_FOUND:
+            print(
+                f"Note: {filename} not found for record '{record_path}' "
+                f"(this file is optional and not present for every record).",
+                file=sys.stderr,
+            )
 
     return result
 

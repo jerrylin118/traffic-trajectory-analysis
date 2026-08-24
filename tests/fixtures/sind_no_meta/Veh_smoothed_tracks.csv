@@ -1,0 +1,3 @@
+track_id,frame_id,timestamp_ms,agent_type,x,y,vx,vy,yaw_rad,heading_rad,length,width,ax,ay,v_lon,v_lat,a_lon,a_lat
+1,0,0,tricycle,5,5,1,0,0,0,3,1.2,0,0,1,0,0,0
+1,1,500,tricycle,5.5,5,1,0,0,0,3,1.2,0,0,1,0,0,0

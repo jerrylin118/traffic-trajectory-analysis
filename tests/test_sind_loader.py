@@ -12,6 +12,7 @@ from trajstats.datasets.sind import (
 FIXTURES = Path(__file__).parent / "fixtures"
 MINI = FIXTURES / "sind_8_2_1_mini"
 NO_TL = FIXTURES / "sind_no_traffic_light"
+NO_META = FIXTURES / "sind_no_meta"
 
 RECORD_ID = "Tianjin/8_2_1"
 
@@ -59,6 +60,25 @@ def test_vehicle_meta_joined():
     car = df[df["track_id"] == "1"]
     assert (car["cross_type"] == "StraightCross").all()
     assert (car["signal_violation"] == "No violation of traffic lights").all()
+
+
+def test_load_sind_record_without_any_meta_files():
+    """Records like Chongqing/6_22_NR_1 ship only the two smoothed-tracks
+    CSVs. The loader must still produce a valid canonical DataFrame, with
+    the meta-derived columns present but null.
+    """
+    df = load_sind_record(NO_META, "Chongqing/6_22_NR_1")
+    validate_trajectory_df(df)
+
+    assert len(df) == 4  # 2 pedestrian rows + 2 vehicle rows
+    assert df["ped_class"].isna().all()
+    assert df["cross_type"].isna().all()
+    assert df["signal_violation"].isna().all()
+
+    meta = load_sind_recording_metas(NO_META)
+    assert meta is None
+    tl = load_sind_traffic_lights(NO_META, "Chongqing/6_22_NR_1")
+    assert tl is None
 
 
 def test_missing_record_dir_raises():

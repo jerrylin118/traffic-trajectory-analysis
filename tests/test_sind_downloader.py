@@ -53,6 +53,27 @@ def test_download_optional_traffic_light_404_does_not_raise(tmp_path):
     assert not (tmp_path / "Tianjin/8_2_1" / "TrafficLight_8_2_1.csv").exists()
 
 
+def test_download_missing_meta_files_does_not_raise(tmp_path):
+    """Some SinD records (e.g. Chongqing/6_22_NR_1) ship only the two
+    smoothed-tracks CSVs and no per-track meta files at all — this must
+    not fail the download since the loader tolerates missing meta files.
+    """
+    def fake_get(url, timeout=None, stream=None):
+        if "_tracks_meta" in url or "recording_metas" in url or "TrafficLight" in url:
+            return FakeResponse(404)
+        return FakeResponse(200)
+
+    with patch("trajstats.download.sind_downloader.requests.get", side_effect=fake_get):
+        result = download_sind_record("Chongqing/6_22_NR_1", dest_dir=tmp_path)
+
+    assert result.ok
+    assert result.statuses["Ped_smoothed_tracks.csv"] == FileFetchStatus.DOWNLOADED
+    assert result.statuses["Veh_smoothed_tracks.csv"] == FileFetchStatus.DOWNLOADED
+    assert result.statuses["Ped_tracks_meta.csv"] == FileFetchStatus.NOT_FOUND
+    assert result.statuses["Veh_tracks_meta.csv"] == FileFetchStatus.NOT_FOUND
+    assert result.statuses["recording_metas.csv"] == FileFetchStatus.NOT_FOUND
+
+
 def test_download_required_file_404_raises(tmp_path):
     def fake_get(url, timeout=None, stream=None):
         if "Veh_smoothed_tracks" in url:
