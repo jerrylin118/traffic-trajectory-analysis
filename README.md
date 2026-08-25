@@ -76,6 +76,26 @@ trajstats download --record Tianjin/8_2_2
 trajstats stats pedestrian-timelength --record Tianjin/8_2_2
 ```
 
+## The DUT dataset (unsignalized intersection)
+
+Also built in: the [DUT vehicle-crowd-interaction dataset](https://github.com/dongfang-steven-yang/vci-dataset-dut)
+(Dalian University of Technology) — pedestrian/vehicle trajectories at
+unsignalized campus crosswalks (`intersection_01`..`intersection_17`) and
+shared spaces (`roundabout_01`..`roundabout_11`), a useful counterpart to
+SinD's signalized Tianjin intersection. Its CSVs are committed directly to
+GitHub (no Git LFS), so `--dataset dut` downloads and loads the same way:
+
+```bash
+trajstats download --dataset dut --record intersection_01
+trajstats stats pedestrian-timelength --dataset dut --record intersection_01
+trajstats plot trajectories --dataset dut --record intersection_01
+```
+
+DUT ships no timestamp column, only a frame index, so `timestamp_s` is
+derived from the dataset's fixed 23.98 fps. Vehicle rows carry a heading
+(`heading_rad`) and scalar speed rather than a velocity vector; `vx`/`vy`
+are decomposed from those. See `src/trajstats/datasets/dut.py`.
+
 ## Adding a new (non-SinD) dataset
 
 Two options, in `src/trajstats/datasets/`:

@@ -6,7 +6,9 @@ import argparse
 import sys
 from pathlib import Path
 
+from .datasets.dut import DutLoader
 from .datasets.sind import SindLoader
+from .download.dut_downloader import download_dut_record
 from .download.sind_downloader import DownloadError, download_sind_record
 from .stats.pedestrian_timelength import run_pedestrian_timelength_report
 from .viz.trajectories import plot_all_trajectories, plot_pedestrian_vehicle_overlay
@@ -15,6 +17,15 @@ from .viz.trajectories import plot_all_trajectories, plot_pedestrian_vehicle_ove
 # trajstats.datasets) to support a new dataset from the CLI.
 DATASET_LOADERS = {
     "sind": SindLoader(),
+    "dut": DutLoader(),
+}
+
+# Download dispatch: dataset name -> (record, dest_dir, overwrite) -> a
+# result object exposing `.statuses` (dict[str, FileFetchStatus]) and
+# `.dest_dir`. Raises DownloadError on failure.
+DOWNLOADERS = {
+    "sind": download_sind_record,
+    "dut": download_dut_record,
 }
 
 
@@ -22,8 +33,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="trajstats")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_dl = sub.add_parser("download", help="Download a SinD record's CSV files")
-    p_dl.add_argument("--record", required=True, help="e.g. Tianjin/8_2_1")
+    p_dl = sub.add_parser("download", help="Download a dataset record's CSV files")
+    p_dl.add_argument("--dataset", default="sind", choices=list(DOWNLOADERS))
+    p_dl.add_argument(
+        "--record", required=True,
+        help="e.g. Tianjin/8_2_1 (sind) or intersection_01 (dut)",
+    )
     p_dl.add_argument("--data-dir", default="data")
     p_dl.add_argument("--overwrite", action="store_true")
 
@@ -57,8 +72,9 @@ def _record_source_dir(data_dir: str, record: str) -> Path:
 
 
 def _cmd_download(args: argparse.Namespace) -> int:
+    downloader = DOWNLOADERS[args.dataset]
     try:
-        result = download_sind_record(args.record, dest_dir=args.data_dir, overwrite=args.overwrite)
+        result = downloader(args.record, dest_dir=args.data_dir, overwrite=args.overwrite)
     except DownloadError as e:
         print(f"Error: {e}", file=sys.stderr)
         return 1
